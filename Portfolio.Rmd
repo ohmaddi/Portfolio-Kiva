@@ -1,0 +1,289 @@
+---
+title: "Portfolio"
+author: "Ouafaa Hmaddi"
+date: "February 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+##Loading libraries 
+
+```{r}
+library(rio)
+library(tidyverse)
+library(tidytext)
+library(ggwordcloud)
+library(ggmap)
+library(stringr)
+library(waffle)
+library(extrafont)
+library(leaflet)
+library(ggrepel)
+library(gridExtra)
+library(grid)
+library(ggpubr)
+```
+
+
+##Importing data
+
+```{r}
+
+loans<- import("kiva_loans.csv", setclass = "tbl_df")
+theme_id<- import("loan_theme_ids.csv", setclass = "tbl_df")
+isoAlpha<- import("isoAlphacodes.csv", setclass = "tbl_df")
+
+region<- import("kiva_mpi_region_locations.csv", setclass = "tbl_df")
+theme_region<- import("loan_themes_by_region.csv", setclass = "tbl_df")
+
+gini<- import("GINI.csv", setclass = "tbl_df")
+colnames(gini) = gini[1, ]
+gini = gini[-1,]
+
+colnames(gini)[colnames(gini)=="Country Code"] <- "Alpha-3 code"
+gini_iso2<- left_join(gini, isoAlpha, by="Alpha-3 code") 
+
+colnames(gini_iso2)[colnames(gini_iso2)=="Alpha-2 code"] <- "country_code"
+colnames(gini_iso2)[colnames(gini_iso2)=="2014"] <- "gini"
+#theme_id %>% 
+#    count(id) %>%
+#    filter(n > 1)
+loans_region <- left_join(loans, region, by='country')
+```
+
+##Joining GINI data with Kiva loans data
+
+```{r fig.height=8}
+loans1<- left_join(loans, theme_id) 
+
+#loans_gdp<- left_join(loans1, gdp_iso2, by="country_code")
+
+loans_gini<- left_join(loans1, gini_iso2, by="country_code")
+
+#fund_gdp<-aggregate(funded_amount ~ country_code, data=loans_gdp, FUN=sum)
+#colnames(fund_gdp)[colnames(fund_gdp)=="funded_amount"] <- "total_funds"
+
+#totfund_gdp<-left_join(fund_gdp, loans_gdp, by="country_code")
+
+loans_gini1<-na.omit(loans_gini)
+
+
+fund_gini<-aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
+colnames(fund_gini)[colnames(fund_gini)=="funded_amount"] <- "total_funds"
+totfund_gini<-left_join(fund_gini, loans_gini1, by="country_code")
+
+
+```
+
+
+##Top 10 countries using Kiva loans
+
+```{r}
+
+#What are the top 10 countries using kiva loans (regardless of the amount of loan), we are interested in the frequence of use of Kiva loans
+Top_10<- loans %>%
+  group_by(country) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  ungroup() %>% 
+  mutate(country = reorder(country,Count)) %>%
+  head(10) 
+#What is the gender distribution among this countries. We will now group by country and gender but keep only the top 10 countries by using a left join to our Top_10 dataset 
+Top_10_g <- loans %>%
+  group_by(country, borrower_genders) %>%
+  summarise(Count_g = n()) %>%
+  arrange(desc(Count_g)) %>%
+  ungroup()  
+
+Top_10_full <- left_join(Top_10, Top_10_g)  %>% 
+  mutate(pct = Count_g/Count)
+
+Top_10_full<-Top_10_full %>% separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep=",")
+
+Top_10_full<- select(Top_10_full, -c(g2:g45))
+
+Top_10_full_g<-Top_10_full %>%
+  group_by(country,g1, Count)%>%
+  summarize(sum(Count_g))%>%
+  mutate(pct=round((`sum(Count_g)`/Count)*100))%>%
+  filter(g1!="")
+  
+#map(a, ~sum(is.na(.))) This is just to check if I covered all genders listed in the borrowers gender column. I stopped at g45 becasue as I added g46 all the the observations were missing which means I covered all of them at g45
+
+p1<-ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g)`, fill=g1)) +
+  geom_bar(stat='identity', show.legend = FALSE) +
+  geom_text(data=Top_10_full_g[9,], aes(label=g1), hjust=0.5,color="yellow")+
+  geom_text(data=Top_10_full_g[10,], aes(label=g1), hjust =1.3)+
+  labs(title= "Top 10 countries borrowing from Kiva by gender",
+       subtitle = "Gender of the 1st member of the team",
+       x="", y="")+
+  scale_fill_viridis_d()+
+  coord_flip()+
+  theme_minimal()
+
+```
+
+##Mapping the number of loans brorowed from Kiva
+
+```{r}
+leaflet(theme_region) %>% addTiles() %>%
+  addCircles(lng = ~lon, lat = ~lat,radius = ~(number) ,
+             color = ~c("blue")) 
+  
+```
+
+##World regions 
+
+```{r}
+p3<-loans_region %>%
+  group_by(world_region) %>%
+  summarise(Count = n()/1000000) %>%
+  arrange(desc(Count)) %>%
+  ungroup() %>% 
+  mutate(world_region = reorder(world_region,Count)) %>%
+  na.omit()%>%
+  ggplot(aes(world_region, Count))+
+  geom_bar(stat='identity',colour="white", fill="grey80")+
+  coord_flip()+
+  labs(x="", y="Number of loans in millions",
+       title="Number of loans borrowed from Kiva by \n world region")+
+  theme_minimal()
+
+```
+
+## Boxplot distribution of funded amount (logged)
+
+```{r}
+top_l<-loans_gini1 %>% select(`Loan Theme Type`, funded_amount) %>% top_n(50,wt=funded_amount) 
+
+#ggplot(loans, aes(term_in_months, color=borrower_genders))+
+#  geom_bar()+
+#  scale_y_log10()
+
+p4<-ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  theme_minimal() + 
+  scale_color_viridis_d()+
+  scale_y_log10()+
+  coord_flip() + 
+  labs(x="", y="", 
+       title="Boxplot distribution of funded amount",
+       subtitle="Grouped by Loan Theme Type (top 50)")
+```
+
+```{r}
+p2<-loans %>% select(sector,loan_amount)%>%
+  group_by(sector)%>%
+  summarise(sum_ta = sum(loan_amount))%>%
+  mutate(perct = sum_ta/sum(loans$loan_amount)*100)%>%
+  ggplot(aes(x= reorder(sector, perct),y = perct))+
+  geom_bar(stat="identity",fill = "steelblue")+
+  coord_flip()+
+  geom_label(aes(label = round(perct,2)), size = 3, y= 2.5, col = "darkgreen")+
+  theme_minimal()+
+  theme(axis.text = element_text(size = 9),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1))+
+  labs(x="Sectors",
+       y="Percentage",
+       title= "Loans disribution by sector")
+```
+
+
+#Visualization 1
+## Kiva at a glance
+
+```{r fig.height=8, fig.width=11}
+ggarrange(p4, p3, p1, p2 ,
+          ncol = 2, nrow = 2)
+
+```
+
+
+##The use of the funded amount 
+
+```{r }
+kiva_words <- loans %>%
+  unnest_tokens(word, use, token = "words")
+
+kiva_words <- kiva_words %>%
+  anti_join(stop_words)
+
+kv_counts <- kiva_words %>%
+  count(word, sort = TRUE)
+
+kv_filter <- kv_counts %>%
+  filter(n > 16000)
+
+kv_filter_angle <- kv_filter %>%
+  mutate(angle = 90 * sample(c(0, 1), n(), 
+                             replace = TRUE, 
+                             prob = c(50, 50)))
+set.seed(12)
+
+p5 <- ggplot(kv_filter_angle, aes(label = word, size = n, color = n, angle = angle)) +
+  geom_text_wordcloud_area(rm_outside = TRUE) +
+  scale_size_area(max_size = 25) +
+  theme_minimal() +
+  scale_color_distiller(palette = "Spectral")
+```
+
+
+###I was hoping for the word invest to be on the top but it does not even belong to the list. 
+
+##How people tweet about the project
+
+```{r }
+kiva_tag <- loans %>%
+  unnest_tokens(word, tags, token = "words")
+
+kiva_tag <- kiva_tag %>%
+  anti_join(stop_words) %>%
+  filter(word !="user_favorite")
+
+kvtag_counts <- kiva_tag %>%
+  count(word, sort = TRUE)
+
+kvtag_filter <- kvtag_counts %>%
+  filter(n > 100)
+
+kvtag_filter_angle <- kvtag_filter %>%
+  mutate(angle = 90 * sample(c(0, 1), n(), 
+                             replace = TRUE, 
+                             prob = c(50, 50)))
+set.seed(12)
+
+p6 <- ggplot(kvtag_filter_angle, aes(label = word, size = n, color = n, angle = angle)) +
+  geom_text_wordcloud_area(rm_outside = TRUE) +
+  scale_size_area(max_size = 25) +
+  theme_minimal() +
+  scale_color_distiller(palette = "Spectral")
+
+```
+
+#Visualization 2
+```{r fig.width=9}
+ggarrange(p5, p6 , 
+          ncol = 2, nrow = 1)
+```
+
+#Visualization 3
+```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+
+loans_gini11 <- left_join(loans_gini1, loans_region, by= "id" )
+ggplot(loans_gini11, aes(funded_amount.x, gini ))+
+  geom_point()+
+  scale_x_log10()+
+  theme_minimal()+
+  labs(x="Funded Amount",
+       y="GINI",
+       title="")+
+  facet_wrap(~world_region)
+
+
+```
+
+
