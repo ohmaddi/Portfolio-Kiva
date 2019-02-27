@@ -46,7 +46,7 @@ colnames(gini) = gini[1, ]
 gini = gini[-1,]
 
 colnames(gini)[colnames(gini)=="Country Code"] <- "Alpha-3 code"
-gini_iso2<- left_join(gini, isoAlpha, by="Alpha-3 code") 
+gini_iso2 <- left_join(gini, isoAlpha, by="Alpha-3 code") 
 
 colnames(gini_iso2)[colnames(gini_iso2)=="Alpha-2 code"] <- "country_code"
 colnames(gini_iso2)[colnames(gini_iso2)=="2014"] <- "gini"
