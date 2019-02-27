@@ -61,19 +61,19 @@ loans1<- left_join(loans, theme_id)
 
 #loans_gdp<- left_join(loans1, gdp_iso2, by="country_code")
 
-loans_gini<- left_join(loans1, gini_iso2, by="country_code")
+loans_gini <- left_join(loans1, gini_iso2, by="country_code")
 
 #fund_gdp<-aggregate(funded_amount ~ country_code, data=loans_gdp, FUN=sum)
 #colnames(fund_gdp)[colnames(fund_gdp)=="funded_amount"] <- "total_funds"
 
 #totfund_gdp<-left_join(fund_gdp, loans_gdp, by="country_code")
 
-loans_gini1<-na.omit(loans_gini)
+loans_gini1 <- na.omit(loans_gini)
 
 
-fund_gini<-aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
+fund_gini <- aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
 colnames(fund_gini)[colnames(fund_gini)=="funded_amount"] <- "total_funds"
-totfund_gini<-left_join(fund_gini, loans_gini1, by="country_code")
+totfund_gini <- left_join(fund_gini, loans_gini1, by="country_code")
 
 
 ```
@@ -84,7 +84,7 @@ totfund_gini<-left_join(fund_gini, loans_gini1, by="country_code")
 ```{r}
 
 #What are the top 10 countries using kiva loans (regardless of the amount of loan), we are interested in the frequence of use of Kiva loans
-Top_10<- loans %>%
+Top_10 <- loans %>%
   group_by(country) %>%
   summarise(Count = n()) %>%
   arrange(desc(Count)) %>%
@@ -101,11 +101,11 @@ Top_10_g <- loans %>%
 Top_10_full <- left_join(Top_10, Top_10_g)  %>% 
   mutate(pct = Count_g/Count)
 
-Top_10_full<-Top_10_full %>% separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep=",")
+Top_10_full <- Top_10_full %>% separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep=",")
 
-Top_10_full<- select(Top_10_full, -c(g2:g45))
+Top_10_full <- select(Top_10_full, -c(g2:g45))
 
-Top_10_full_g<-Top_10_full %>%
+Top_10_full_g <- Top_10_full %>%
   group_by(country,g1, Count)%>%
   summarize(sum(Count_g))%>%
   mutate(pct=round((`sum(Count_g)`/Count)*100))%>%
