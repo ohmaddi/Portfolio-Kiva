@@ -39,7 +39,7 @@ theme_id <- import("loan_theme_ids.csv", setclass = "tbl_df")
 isoAlpha <- import("isoAlphacodes.csv", setclass = "tbl_df")
 region <- import("kiva_mpi_region_locations.csv", setclass = "tbl_df")
 theme_region <- import("loan_themes_by_region.csv", setclass = "tbl_df")
-gini<- import("GINI.csv", setclass = "tbl_df")
+gini <- import("GINI.csv", setclass = "tbl_df")
 loans_region <- left_join(loans, region, by='country')
 
 colnames(gini) = gini[1, ]
