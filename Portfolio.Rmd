@@ -62,9 +62,9 @@ loans1 <- left_join(loans, theme_id)
 loans_gini <- left_join(loans1, gini_iso2, by="country_code")
 loans_gini1 <- na.omit(loans_gini)
 
-fund_gini<-aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
+fund_gini <- aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
 colnames(fund_gini)[colnames(fund_gini)=="funded_amount"] <- "total_funds"
-totfund_gini<-left_join(fund_gini, loans_gini1, by="country_code")
+totfund_gini <- left_join(fund_gini, loans_gini1, by="country_code")
 
 
 ```
