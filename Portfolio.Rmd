@@ -230,7 +230,11 @@ p5 <- ggplot(kv_filter_angle, aes(label = word, size = n, color = n, angle = ang
   geom_text_wordcloud_area(rm_outside = TRUE) + # Cam: Looks really cool. Dropping the unfitted words probably makes sense in this case. 
   scale_size_area(max_size = 25) +
   theme_minimal() +
+<<<<<<< HEAD
   scale_color_distiller(palette = "Spectral") # Cam: I did not know that this existed! Being able to change disscrete palettes to continuous palettes is a game changer!
+=======
+  scale_color_distiller(palette = "Spectral") # Cam: I did not know that this existed! Being able to change disscrete palettes to continuous palettes is a game change!
+>>>>>>> 67146744e959cfca50dfeb525a19130bcd5d25c4
 ```
 
 
