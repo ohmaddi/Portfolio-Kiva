@@ -25,6 +25,7 @@ library(ggrepel)
 library(gridExtra)
 library(grid)
 library(ggpubr)
+library(here)
 ```
 
 
@@ -32,26 +33,30 @@ library(ggpubr)
 
 ```{r}
 
-loans1 <- import("kiva_loans1.csv", setclass = "tbl_df")
-loans2 <- import("kiva_loans2.csv", setclass = "tbl_df")
+# Cam: Looks like I couldn't import the data without using `here()`.
+loans1 <- import(here("data", "kiva_loans1.csv"), setclass = "tbl_df")
+loans2 <- import(here("data", "kiva_loans2.csv"), setclass = "tbl_df")
 loans <- bind_rows(loans1, loans2)
-theme_id <- import("loan_theme_ids.csv", setclass = "tbl_df")
-isoAlpha <- import("isoAlphacodes.csv", setclass = "tbl_df")
-region <- import("kiva_mpi_region_locations.csv", setclass = "tbl_df")
-theme_region <- import("loan_themes_by_region.csv", setclass = "tbl_df")
-gini <- import("GINI.csv", setclass = "tbl_df")
-loans_region <- left_join(loans, region, by='country')
+theme_id <- import(here("data", "loan_theme_ids.csv"), setclass = "tbl_df")
+isoAlpha <- import(here("data", "isoAlphacodes.csv"), setclass = "tbl_df")
+region <- import(here("data", "kiva_mpi_region_locations.csv"), setclass = "tbl_df")
+theme_region <- import(here("data", "loan_themes_by_region.csv"), setclass = "tbl_df")
+gini <- import(here("data", "GINI.csv"), setclass = "tbl_df")
+loans_region <- region %>%
+  group_by(country) %>%
+  slice(1) %>%
+  filter(country != "") %>%
+  right_join(loans, by = "country")
+# Cam: Nice use of a left_join. I did not that it actually looked  like a many-to-many join. To fix this, I grabbed just the first occurance of each country in region and then joined them. 
 
 colnames(gini) = gini[1, ]
 gini = gini[-1,]
 
-colnames(gini)[colnames(gini)=="Country Code"] <- "Alpha-3 code"
-gini_iso2 <- left_join(gini, isoAlpha, by="Alpha-3 code") 
+colnames(gini)[colnames(gini) == "Country Code"] <- "Alpha-3 code"
+gini_iso2 <- left_join(gini, isoAlpha, by = "Alpha-3 code") 
 
-colnames(gini_iso2)[colnames(gini_iso2)=="Alpha-2 code"] <- "country_code"
-colnames(gini_iso2)[colnames(gini_iso2)=="2014"] <- "gini"
-
-
+colnames(gini_iso2)[colnames(gini_iso2) == "Alpha-2 code"] <- "country_code"
+colnames(gini_iso2)[colnames(gini_iso2) == "2014"] <- "gini"
 ```
 
 ##Joining GINI data with Kiva loans data
