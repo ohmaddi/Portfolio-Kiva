@@ -160,11 +160,11 @@ p3 <- loans_region %>%
 ```{r}
 top_l <- loans_gini1 %>% select(`Loan Theme Type`, funded_amount) %>% top_n(50,wt=funded_amount) 
 
-p4 <- ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) + 
+p4 <- ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) +
   geom_boxplot(show.legend = FALSE) + 
   theme_minimal() + 
   scale_color_viridis_d()+
-  scale_y_log10()+
+  scale_y_log10()+ # Cam: Good use of a logarithmic scale!. 
   coord_flip() + 
   labs(x="", y="", 
        title="Boxplot distribution of funded amount",
