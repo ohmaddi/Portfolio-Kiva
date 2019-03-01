@@ -140,18 +140,18 @@ leaflet(theme_region) %>% addTiles() %>% # Cam: This is really cool! I've never 
 ```{r}
 p3 <- loans_region %>%
   group_by(world_region) %>%
-  summarise(Count = n()/1000000) %>%
+  summarise(Count = n() / 1000) %>% # Cam: Since the highest grouping seems to be 200,000, I'm not sure having the x-axis in millions makes sense. (I realize this is probably a result of changing the mant-to-many join above)
   arrange(desc(Count)) %>%
   ungroup() %>% 
   mutate(world_region = reorder(world_region,Count)) %>%
-  na.omit()%>%
-  ggplot(aes(world_region, Count))+
-  geom_bar(stat='identity',colour="white", fill="grey80")+
-  coord_flip()+
-  labs(x="", 
-       y="Number of loans in millions",
-       title="Number of loans borrowed from Kiva by \n world region")+
-  theme_minimal()
+  na.omit() %>% #Cam: Nice job passing the data straight through to ggplot!
+  ggplot(aes(world_region, Count)) +
+    geom_bar(stat = 'identity', colour = "white", fill = "grey60") + # Cam: I'm not in love with the grey80, it is a bit hard to see
+    coord_flip() +
+    labs(x = "", 
+         y = "Number of loans in thousands",
+         title = "Number of loans borrowed from Kiva by \n world region") +
+    theme_minimal()
 
 ```
 
