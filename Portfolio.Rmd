@@ -244,7 +244,7 @@ kiva_tag <- loans %>%
 
 kiva_tag <- kiva_tag %>%
   anti_join(stop_words) %>%
-  filter(word !="user_favorite")
+  filter(word != "user_favorite")
 
 kvtag_counts <- kiva_tag %>%
   count(word, sort = TRUE)
@@ -262,7 +262,7 @@ p6 <- ggplot(kvtag_filter_angle, aes(label = word, size = n, color = n, angle = 
   geom_text_wordcloud_area(rm_outside = TRUE) +
   scale_size_area(max_size = 25) +
   theme_minimal() +
-  scale_color_distiller(palette = "Spectral")
+  scale_color_distiller(palette = "Spectral") # Cam: I think this palette does a good job redundant coding the use of these words on twitter. 
 
 ```
 
