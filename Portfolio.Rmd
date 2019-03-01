@@ -172,21 +172,22 @@ p4 <- ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funde
 ```
 
 ```{r}
-p2 <- loans %>% select(sector,loan_amount)%>%
-  group_by(sector)%>%
-  summarise(sum_ta = sum(loan_amount))%>%
+p2 <- loans %>% select(sector,loan_amount) %>%
+  group_by(sector) %>%
+  summarise(sum_ta = sum(loan_amount)) %>%
   mutate(perct = sum_ta/sum(loans$loan_amount)*100)%>%
-  ggplot(aes(x= reorder(sector, perct),y = perct))+
+  ggplot(aes(x= reorder(sector, perct),y = (perct / 100)))+ # Cam: Good job reordering by perct!
   geom_bar(stat="identity",fill = "steelblue")+
   coord_flip()+
-  geom_label(aes(label = round(perct,2)), size = 3, y= 2.5, col = "darkgreen")+
+  geom_label(aes(label = round((perct),2)), size = 3, y= 0.025, col = "black") + # Cam: I REALLY like these labels. I might drop the "dark green" for black, though.
   theme_minimal()+
   theme(axis.text = element_text(size = 9),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1))+
+        axis.text.x = element_text(vjust = 0.5, hjust = 1), # Cam: Turning the numbers doesn't seem necessary to me. 
+        axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1)) +
   labs(x="Sectors",
        y="Percentage",
-       title= "Loans disribution by sector")
+       title= "Loans disribution by sector") + 
+  scale_y_continuous(labels = scales::percent) # Cam: I think changing the y-axis to a percent may help reduce cognitive load. 
 ```
 
 
