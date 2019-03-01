@@ -62,14 +62,15 @@ colnames(gini_iso2)[colnames(gini_iso2) == "2014"] <- "gini"
 ##Joining GINI data with Kiva loans data
 
 ```{r fig.height=8}
-loans1 <- left_join(loans, theme_id) 
+loans1 <- left_join(loans, theme_id)
 
-loans_gini <- left_join(loans1, gini_iso2, by="country_code")
+loans_gini <- left_join(loans1, gini_iso2, by = "country_code") # Cam: Again, this looks like a many-to-many join. I'm not going to correct it here because it is less clear which dataset I should make distinct. 
 loans_gini1 <- na.omit(loans_gini)
 
-fund_gini <- aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
-colnames(fund_gini)[colnames(fund_gini)=="funded_amount"] <- "total_funds"
-totfund_gini <- left_join(fund_gini, loans_gini1, by="country_code")
+fund_gini <- aggregate(funded_amount ~ country_code, data = loans_gini1, FUN = sum)
+colnames(fund_gini)[colnames(fund_gini) == "funded_amount"] <- "total_funds"
+totfund_gini <- left_join(fund_gini, loans_gini1, by = "country_code")
+
 
 
 ```
