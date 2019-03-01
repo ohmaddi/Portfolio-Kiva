@@ -130,10 +130,9 @@ p1 <- ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g
 ##Mapping the number of loans brorowed from Kiva
 
 ```{r}
-leaflet(theme_region) %>% addTiles() %>%
-  addCircles(lng = ~lon, lat = ~lat,radius = ~(number) ,
+leaflet(theme_region) %>% addTiles() %>% # Cam: This is really cool! I've never come accross leaflet and it seems very user friendly. 
+  addCircles(lng = ~lon, lat = ~lat, radius = ~(number),
              color = ~c("blue")) 
-  
 ```
 
 ##World regions 
