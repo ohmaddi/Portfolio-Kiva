@@ -88,6 +88,7 @@ Top_10 <- loans %>%
   ungroup() %>% 
   mutate(country = reorder(country,Count)) %>%
   head(10) 
+
 #What is the gender distribution among this countries. We will now group by country and gender but keep only the top 10 countries by using a left join to our Top_10 dataset 
 Top_10_g <- loans %>%
   group_by(country, borrower_genders) %>%
@@ -96,30 +97,33 @@ Top_10_g <- loans %>%
   ungroup()  
 
 Top_10_full <- left_join(Top_10, Top_10_g)  %>% 
-  mutate(pct = Count_g/Count)
+  mutate(pct = Count_g / Count)
 
-Top_10_full <-Top_10_full %>% separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep=",")
+Top_10_full <- Top_10_full %>%
+  separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep = ",")
 
 Top_10_full <- select(Top_10_full, -c(g2:g45))
 
-Top_10_full_g <-Top_10_full %>%
-  group_by(country,g1, Count)%>%
-  summarize(sum(Count_g))%>%
-  mutate(pct=round((`sum(Count_g)`/Count)*100))%>%
-  filter(g1!="")
+Top_10_full_g <- Top_10_full %>%
+  group_by(country,g1, Count) %>%
+  summarize(sum(Count_g)) %>%
+  mutate(pct = round((`sum(Count_g)` / Count)*100)) %>%
+  filter(g1 != "") %>%
+  ungroup() %>%
+  mutate(g1 = str_to_title(g1))
   
 #map(a, ~sum(is.na(.))) This is just to check if I covered all genders listed in the borrowers gender column. I stopped at g45 becasue as I added g46 all the the observations were missing which means I covered all of them at g45
 
-p1 <- ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g)`, fill=g1)) +
-  geom_bar(stat='identity', show.legend = FALSE) +
-  geom_text(data=Top_10_full_g[9,], aes(label=g1), hjust=0.5,color="yellow")+
-  geom_text(data=Top_10_full_g[10,], aes(label=g1), hjust =1.3)+
-  labs(title= "Top 10 countries borrowing from Kiva by gender",
+p1 <- ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g)`, fill = g1)) +
+  geom_bar(stat = 'identity', show.legend = TRUE) + # Cam: Could just be my screen, but it looked like the geom_texts were not correctly placed so I dropped them and added the legend back. I moved the legend so it would be inset into the plot. I also mutated the column to get the legend levels in title case. 
+  labs(title = "Top 10 countries borrowing from Kiva by gender",
        subtitle = "Gender of the 1st member of the team",
-       x="", y="")+
-  scale_fill_viridis_d()+
-  coord_flip()+
-  theme_minimal()
+       x = "", y = "") +
+  scale_fill_viridis_d() + # Cam: Great use of colorblind-friendly colours! 
+  coord_flip() + # Cam: I think the coord_flip really makes this plot fit in well with the others.
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        legend.position = c(.8,.3))
 
 ```
 
