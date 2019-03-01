@@ -33,7 +33,7 @@ library(here)
 
 ```{r}
 
-# Cam: That's a really impressive amount of data! I did have a bit of problem importing without `here()`, but other than that it worked fine.
+# Cam: That's a really impressive amount of data! I did have a bit of a problem importing without `here()`, but other than that it worked fine.
 loans1 <- import(here("data", "kiva_loans1.csv"), setclass = "tbl_df")
 loans2 <- import(here("data", "kiva_loans2.csv"), setclass = "tbl_df")
 loans <- bind_rows(loans1, loans2)
@@ -212,7 +212,7 @@ kiva_words <- kiva_words %>%
          word != "sell",
          word != "purchase",
          word != "pay",
-         word != "business") # Cam: Since I would assume that almost all Kiva loans include the word buy, sell, purchase, pay, busines, etcetera, I would likely treat these as stop word. I think is very illuminating to see water is one of the most used waters in Kiva loans.
+         word != "business") # Cam: Since I would assume that almost all Kiva loans include the word buy, sell, purchase, pay, busines, etcetera, I would likely treat these as stop word. I think is very illuminating to see water is one of the most used words in Kiva loans.
 
 kv_counts <- kiva_words %>%
   count(word, sort = TRUE)
