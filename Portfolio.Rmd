@@ -207,7 +207,12 @@ kiva_words <- loans %>%
   unnest_tokens(word, use, token = "words")
 
 kiva_words <- kiva_words %>%
-  anti_join(stop_words)
+  anti_join(stop_words) %>%
+  filter(word != "buy",
+         word != "sell",
+         word != "purchase",
+         word != "pay",
+         word != "business") # Cam: Since I would assume that almost all Kiva loans include the word buy, sell, purchase, pay, busines, etcetera, I would likely treat these as stop word. I think is very illuminating to see water is one of the most used waters in Kiva loanss. 
 
 kv_counts <- kiva_words %>%
   count(word, sort = TRUE)
@@ -222,7 +227,7 @@ kv_filter_angle <- kv_filter %>%
 set.seed(12)
 
 p5 <- ggplot(kv_filter_angle, aes(label = word, size = n, color = n, angle = angle)) +
-  geom_text_wordcloud_area(rm_outside = TRUE) +
+  geom_text_wordcloud_area(rm_outside = TRUE) + # Cam: Looks really cool. Dropping the unfitted words probably makes sense in this case. 
   scale_size_area(max_size = 25) +
   theme_minimal() +
   scale_color_distiller(palette = "Spectral")
