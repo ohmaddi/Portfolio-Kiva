@@ -276,16 +276,19 @@ This is to compare the way people who benifit from the loan communicate about th
 
 #Visualization 3
 ```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+loans_gini11 <- left_join(loans_gini1, loans_region, by = "id")
 
-loans_gini11 <- left_join(loans_gini1, loans_region, by= "id" )
-ggplot(loans_gini11, aes(funded_amount.x, gini ))+
-  geom_point()+
-  scale_x_log10()+
-  theme_minimal()+
-  labs(x="Funded Amount",
-       y="GINI",
-       title="")+
+# Cam: I'm not sure if me fixing the many-to-many join threw what I'm seeing off, but, based off what I am seeing, I would suggest dropping the facet wrap. Looking at inter-regionally, there does not seem to be a clearly relationhip between the two variables of interest. I also wonder if you collapsed within countrie, whether the number of points would be more managable.
+ggplot(loans_gini11, aes(funded_amount.x, gini)) +
+  geom_point() +
+  scale_x_log10() +
+  theme_minimal() +
+  labs(x = "Funded Amount",
+       y = "GINI",
+       title = "") +
   facet_wrap(~world_region)
+
+# Great work, Ouafaa!
 ```
 
 I thinks this visualization still needs many suggestion to communicate the message better. I would really appreciate any feedback on this one. 
