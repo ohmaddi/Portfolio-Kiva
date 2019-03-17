@@ -1,0 +1,556 @@
+---
+title: "Kiva loans study"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    orientation: columns
+    vertical_layout: fill
+    theme: cosmo
+    logo: logo.png
+    favicon: logo.png
+---
+
+<style>                     
+.navbar {
+  background-color:#003D79;
+  border-color:white;
+}
+.navbar-brand {
+color:white!important;
+}
+</style>   
+
+<style type="text/css">
+
+.chart-title {  /* chart_title  */
+   font-size: 15px
+</style>
+```{r }
+options(scipen=5, message=FALSE, warning=FALSE)
+
+```
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(rio)
+library(tidyverse)
+library(dplyr)
+library(tidytext)
+library(ggwordcloud)
+library(ggmap)
+library(stringr)
+library(waffle)
+library(extrafont)
+library(leaflet)
+library(ggrepel)
+library(gridExtra)
+library(grid)
+library(ggpubr)
+library(plotly)
+library(colorblindr)
+library(here)
+library(plotlyGeoAssets)
+```
+
+```{r data import }
+loans1 <- import(here("data","kiva_loans1.csv"), setclass = "tbl_df")
+loans2 <- import(here("data","kiva_loans2.csv"), setclass = "tbl_df")
+loans <- bind_rows(loans1, loans2)
+theme_id <- import(here("data","loan_theme_ids.csv"), setclass = "tbl_df")
+isoAlpha <- import(here("data","isoAlphacodes.csv"), setclass = "tbl_df")
+region <- import(here("data","kiva_mpi_region_locations.csv"), setclass = "tbl_df")
+theme_region <- import(here("data","loan_themes_by_region.csv"), setclass = "tbl_df")
+gini<- import(here("data","GINI.csv"), setclass = "tbl_df")
+loans_region <- region %>%
+  group_by(country) %>%
+  slice(1) %>%
+  filter(country != "") %>%
+  right_join(loans, by = "country")
+
+colnames(gini) = gini[1, ]
+gini = gini[-1,]
+
+gini <- gini %>%
+  rename( 'Alpha-3 code'=`Country Code`  )
+gini_iso2<- left_join(gini, isoAlpha, by="Alpha-3 code") 
+
+gini_iso2 <-gini_iso2 %>%
+  rename(country_code = `Alpha-2 code`) %>%
+  rename( gini = `2014`)
+```
+
+
+```{r data join}
+loans1 <- left_join(loans, theme_id) 
+
+loans_gini <- left_join(loans1, gini_iso2, by="country_code")
+loans_gini1 <- na.omit(loans_gini)
+
+fund_gini<-aggregate(funded_amount ~ country_code, data=loans_gini1, FUN=sum)
+colnames(fund_gini)[colnames(fund_gini)=="funded_amount"] <- "total_funds"
+totfund_gini<-left_join(fund_gini, loans_gini1, by="country_code")
+```
+
+```{r Top10 chart data}
+#What are the top 10 countries using kiva loans (regardless of the amount of loan), we are interested in the frequence of use of Kiva loans
+Top_10 <- loans %>%
+  group_by(country) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  ungroup() %>% 
+  mutate(country = reorder(country,Count)) %>%
+  head(10) 
+#What is the gender distribution among this countries. We will now group by country and gender but keep only the top 10 countries by using a left join to our Top_10 dataset 
+Top_10_g <- loans %>%
+  group_by(country, borrower_genders) %>%
+  summarise(Count_g = n()) %>%
+  arrange(desc(Count_g)) %>%
+  ungroup()  
+
+Top_10_full <- left_join(Top_10, Top_10_g)  %>% 
+  mutate(pct = Count_g/Count)
+
+Top_10_full <-Top_10_full %>% separate(borrower_genders,c('g1','g2','g3','g4','g5','g6','g7','g8','g9','g10','g11','g12','g13','g14','g15','g16','g17','g18','g19','g20','g21','g22','g23', 'g24','g25','g26','g27','g28','g29','g30','g31','g32','g33','g34','g35','g36','g37','g38','g39','g40','g41','g42','g43','g44','g45'), sep=",")
+
+Top_10_full <- select(Top_10_full, -c(g2:g45))
+
+Top_10_full_g <-Top_10_full %>%
+  group_by(country,g1, Count)%>%
+  summarize(sum(Count_g))%>%
+  mutate(pct=round((`sum(Count_g)`/Count)*100))%>%
+  filter(g1!="")
+  
+#map(a, ~sum(is.na(.))) This is just to check if I covered all genders listed in the borrowers gender column. I stopped at g45 becasue as I added g46 all the the observations were missing which means I covered all of them at g45
+
+```
+
+# At a glance {data-icon="fa-hand-holding-usd"}
+
+> The online crowdfunding platform [Kiva](http://www.kiva.org) is dedicated to extend financial services to poor people around the World. This is a general overview of the platform intended for the general public, and particularly useful for people who would like to use the Kiva platform either as a lender, as a borrower or as a microfinance institution who wants to be the intermediary. The data represent Kiva loans data FY2014 and is extracted from [Kaggle](https://www.kaggle.com/kiva/data-science-for-good-kiva-crowdfunding).
+
+Column {data-width=120}
+------------------------
+###highlight1
+
+```{r }
+act <- loans %>% select(activity,loan_amount)%>%
+  group_by(activity)%>%
+  summarise(sum_ta = sum(loan_amount))%>%
+  mutate(perct = sum_ta/sum(loans$loan_amount)*100) %>%
+  arrange(-perct)
+
+valueBox(
+  value = paste0(round(act[1,3]), "%"),
+  caption = "of loans borrowed from Kiva, across the world, are used for farming activities.",
+  color =  "#5FA54D",
+  icon = "fa-pagelines"
+  )
+
+```
+
+###highlight2
+
+```{r }
+
+use <- loans %>% select(use,loan_amount)%>%
+  group_by(use)%>%
+  summarise(sum_ta = sum(loan_amount))%>%
+  mutate(perct = sum_ta/sum(loans$loan_amount)*100) %>%
+  arrange(-perct)
+
+valueBox(
+  value = paste0(round(use[1,3]), "%"),
+  caption = "of loans borrowed from Kiva are used to buy a water filter to provide safe drinking water for the family. This is close to $5M spent on filters.",
+  color =  "#5FA54D",
+  icon = "fa-tint")
+
+```
+
+Column {data-width=440}
+------------------------
+
+### Top 10 countries borrowing from Kiva by gender of the 1st member of the team
+
+```{r}
+p1 <- ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g)`, fill=g1)) +
+  geom_bar(stat='identity', show.legend = FALSE) +
+  labs(x="", y="")+
+  scale_fill_OkabeIto()+
+  coord_flip()+
+  theme_minimal()
+
+ggplotly(p1)
+```
+
+### Number of loans borrowed from Kiva by world region
+
+```{r}
+p3 <- loans_region %>%
+  group_by(world_region) %>%
+  summarise(Count = n()/1000) %>%
+  arrange(desc(Count)) %>%
+  ungroup() %>% 
+  mutate(world_region = reorder(world_region,Count)) %>%
+  na.omit()%>%
+  ggplot(aes(world_region, Count))+
+  geom_bar(stat='identity',colour="white", fill="grey80")+
+  coord_flip()+
+  labs(x="", 
+       y="Number of loans in thousans")+
+  theme_minimal()
+
+ggplotly(p3)
+```
+
+
+Column {data-width=440}
+------------------------
+
+### Loans disribution by sector
+
+```{r  fig.width=8}
+loans %>% select(sector,loan_amount)%>%
+  group_by(sector)%>%
+  summarise(sum_ta = sum(loan_amount))%>%
+  mutate(perct = sum_ta/sum(loans$loan_amount)*100)%>%
+  ggplot(aes(x= reorder(sector, perct),y = perct))+
+  geom_bar(stat="identity",fill = "steelblue")+
+  geom_label(aes(label = round(perct,2)), size = 3, y= 2.5, col = "darkgreen")+
+  coord_flip()+
+  theme_minimal()+
+  theme(axis.text = element_text(size = 12),
+        axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),
+        axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1),
+        axis.title=element_text(size=14))+
+  labs(x="",
+       y="Percent")
+  
+```
+
+### Boxplot distribution of funded amount - Grouped by Loan Theme Type (top 50)
+
+```{r fig.width=9}
+top_l <- loans_gini1 %>% select(`Loan Theme Type`, funded_amount) %>% top_n(50,wt=funded_amount) 
+
+ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  theme_minimal() + 
+  scale_color_viridis_d() +
+  scale_y_log10()+
+  coord_flip() + 
+  labs(x="", y="")+
+  theme(axis.text = element_text(size = 14))
+
+```
+
+# At a glance - Version 0 {.storyboard}
+
+### Top 10 countries borrowing from Kiva by gender - Version 0
+
+```{r}
+ggplot(Top_10_full, aes(x = country ,y = Count)) +
+  geom_bar(stat='identity') +
+  labs(title = "Top 10 countries borrowing from Kiva")+
+  coord_flip()+
+  theme_minimal()
+```
+
+***
+This plot shows the first version of the plot displayed at the top left of the previous page (At a glance). To make this visualization more informative, I wanted to add the gender of borrowers. For this, the gender column included the genders of all team members. For example, for a certain project gender would be displayed as (female, male, female, female) so I had to separate the gender column and I took only the gender of the first team member assuming it's the leader of the team. I also checkek to make sure the proportions of gender displayed are similar or close to the full data about gender (i.e. considering all team members). This resulted in the plot shown in the following tab. 
+
+### Top 10 countries borrowing from Kiva by gender - Version 1
+
+
+```{r}
+
+ggplot(Top_10_full_g, aes(x = country ,y = `sum(Count_g)`, fill=g1)) +
+  geom_bar(stat='identity') +
+  labs(title = "Top 10 countries borrowing from Kiva by gender",
+    subtitle = "Gender of the 1st member of the team")+
+  coord_flip()+
+  theme_minimal()
+
+```
+
+***
+This plot now has the information that I want to visualize but I can still improve it to make it easier for dahsboard users. To make this visualization better, first I ordered the countires by total count of loans. Then, I removed the titles of the axis titles given that the labels are self-explanatory. I also removed plot title and subtitle because they are already displayed as a dashboard chart title. Finally, I used ggplotly to display the plot and for that I also removed, the legend since it is part of plotly visualization. 
+
+### Loans disribution by sector - Version 0
+
+
+```{r}
+
+loans %>% select(sector,loan_amount)%>%
+  group_by(sector)%>%
+  summarise(sum_ta = sum(loan_amount))%>%
+  mutate(perct = sum_ta/sum(loans$loan_amount)*100)%>%
+  ggplot(aes(x= reorder(sector, perct),y = perct))+
+  geom_bar(stat="identity")+
+  coord_flip()+
+  theme_minimal()
+```
+
+***
+I made a couple of changes in this plot in irder to display the final version that you see on the top right of the first page of the dashboard. First, I changed the color of the fill to steel blue, then I added the labels so you can actually see the exact percentages. I also changed the axis labels as they were very small 
+
+### Boxplot distribution of funded amount - Version 0
+
+```{r}
+
+ggplot(top_l, aes(x=`Loan Theme Type`, y= funded_amount, col=`Loan Theme Type`)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  coord_flip()+
+  theme_minimal()
+
+```
+
+***
+This plot displays the message that I wanted to communicate. However, the color pallette, the order of theme types as well as the scale of the y-axis (displayed as x-axis) need to be improved. I irdred the theme types, logged the funded amount axis (log-10) to deal with some outliers in the distributionm then I changed the pallette to viridis. Finally, I also changed the axis label size and removed the titles because the labels are explained already based on the title and subtitle. 
+
+The plot on the bottom left of the first page was straightforward and I did not make any changes to it.
+
+# How do we talk about the loans? {data-icon="fa-twitter"}
+Column {data-width=200}
+-----------------------
+***
+The key message here is to show the difference between how people talk about Kiva loans in social media (Twitter), and how users of these loans describe the purpose of these loans. As I expected, people amplify the impact of the loans beyond their simple use and purpose. They use buzzwords that do not accurately describe the real needs of the populations in need of these loans. While the users' descriptions seem as basic as they borrow money to buy food and water filters, the community describe these projects in very broad terms using words like Woman, Eco and Vegan. It is very important to grasp this difference, as I personally would lend more money if I see the direct impact of my loan rather than a boilerplate statement telling me there will be an ecological impact and women empowerment. 
+I received feedback on these plots from different reviewers suggesting to create a histogram, as it is more informative in terms of frequency of use of the words. For this reason, I added a histogram and I kept the wordcloud as well to help communicate the message to both audiences.
+
+
+Column {data-width=400}
+-----------------------
+
+### How do people tweet about Kiva projects? - For Wordcloud fans 
+
+```{r}
+kiva_tag <- loans %>%
+  unnest_tokens(word, tags, token = "words")
+
+kiva_tag <- kiva_tag %>%
+  anti_join(stop_words) %>%
+  filter(word !="user_favorite")
+
+kvtag_counts <- kiva_tag %>%
+  count(word, sort = TRUE)
+
+kvtag_filter <- kvtag_counts %>%
+  filter(n > 1000)
+
+kvtag_filter_angle <- kvtag_filter %>%
+  mutate(angle = 90 * sample(c(0, 1), n(), 
+                             replace = TRUE, 
+                             prob = c(50, 50)))
+set.seed(12)
+
+ggplot(kvtag_filter_angle, aes(label = word, size = n, color = n, angle = angle)) +
+  geom_text_wordcloud_area(rm_outside = TRUE) +
+  scale_size_area(max_size = 25) +
+  theme_minimal() +
+  scale_color_distiller(palette = "Spectral")
+
+```
+
+### How do people tweet about Kiva projects? - For Histogram fans
+
+```{r fig.width= 8}
+ggplot(filter(kvtag_filter, n>50000), aes(fct_reorder(word, n), n, fill=word))+
+  geom_bar(stat = "identity", show.legend = FALSE)+
+  scale_fill_viridis_d()+
+  coord_flip()+
+  theme_minimal()+
+  labs(y="", x="")+
+  theme(axis.text = element_text(size=14))
+```
+
+
+Column {data-width=400}
+-----------------------
+
+### How users describe Kiva loans - For wordcloud fans
+
+```{r}
+
+kiva_words <- loans %>%
+  unnest_tokens(word, use, token = "words")
+
+kiva_words <- kiva_words %>%
+  anti_join(stop_words)
+
+kv_counts <- kiva_words %>%
+  count(word, sort = TRUE)
+
+kv_filter <- kv_counts %>%
+  filter(n > 16000)
+
+kv_filter_angle <- kv_filter %>%
+  mutate(angle = 90 * sample(c(0, 1), n(), 
+                             replace = TRUE, 
+                             prob = c(50, 50)))
+set.seed(12)
+
+ggplot(kv_filter_angle, aes(label = word, size = n, color = n, angle = angle)) +
+  geom_text_wordcloud_area(rm_outside = TRUE) +
+  scale_size_area(max_size = 35) +
+  theme_minimal() +
+  scale_color_distiller(palette = "Spectral")
+```
+
+### How do users describe Kiva loans? - For Histogram fans
+
+```{r fig.width= 8}
+ggplot(filter(kv_filter, n>40000), aes(fct_reorder(word, n), n, fill=word))+
+  geom_bar(stat = "identity", show.legend = FALSE)+
+  scale_fill_viridis_d()+
+  coord_flip()+
+  theme_minimal()+
+  labs(y="", x="")+
+  theme(axis.text = element_text(size=14))
+```
+
+
+# Kiva, inequality and poverty {.storyboard}
+
+### The relationship between the amount of funded loans and inequality represented by the GINI index for each world region.
+
+
+```{r}
+loans_gini11 <- left_join(loans_gini1, loans_region, by= "id" )
+
+loans_gini11 <- loans_gini11[!is.na(loans_gini11$world_region), ]
+
+ggplot(loans_gini11, aes(y=funded_amount.x, x=gini))+
+  geom_jitter( color="darkred", alpha=.1)+
+  scale_y_log10()+
+  theme_minimal()+
+  labs(y="Funded Amount",
+       x="GINI",
+       title="")+
+  facet_wrap(~world_region)
+```
+
+***
+This is the plot where I spent most of the time thinking about a visualization that can show the relationship between inequality and Kiva loans or poverty levels and Kiva loans. In this first plot, I plotted the funded amount of loans by GINI coefficient, which represents the inequality index. I faceted the plot by world region. However, I could not really conclude any key information based on this plot. Especially given the density of the points.
+
+NB: For this plot and all the plots displayed in the following tabs, I use the logged Y scale to address some outliers and show the distribution in a better way. 
+
+
+### Contrasting the amount of funded loans in Agriculture and wholesale sectors by GINI index.
+
+
+```{r}
+ggplot(loans_gini11, aes(y=funded_amount.x, x=gini))+
+  geom_jitter(data=filter(loans_gini11, sector.x == "Health"), aes(y=funded_amount.x, x=gini), color="darkred", alpha=.1)+
+  geom_jitter(data=filter(loans_gini11, sector.x == "Wholesale"), aes(y=funded_amount.x, x=gini), color="darkgreen",alpha=.3)+
+  scale_y_log10()+
+  theme_minimal()+
+  labs(y="Funded Amount",
+       x="GINI",
+       title="")
+```
+
+***
+Following the plot I discussed on the previous tab, I decided to solve the high-density problem by contrasting the Agriculture sector in dark red to the wholesale sector in dark green. These two sectors represent the sector with the highest number of loans versus the sector with the lowest number of loans as shown in the first page [Page 1]. I did not facet by world region, as it was not useful for interpretation, as we have seen in the precedent figure. We could conclude here that agriculture is dominant in regions with low GINI while wholesale loans are mainly used in countries with high GINI index, which seems logical given that countries with high GINI index are usually more industrialized and developed. However, this does not really give me enough information about the relationship that I am trying to explore. Therefore, I instead calculated the average amount of funded loans and displayed it in the plot that you can see in the following tab.  
+
+### The relationship between the average amount of funded loans and GINI index. 
+
+```{r}
+loans_gini_avg <- loans_gini11 %>%
+  group_by (gini, sector.x) %>%
+  summarise(avg_fund = mean(funded_amount.x))
+
+
+ggplot(loans_gini_avg, aes(y=avg_fund, x=gini))+
+  geom_point(color="blue", alpha=.1)+
+  geom_point(data= filter(loans_gini_avg, sector.x=="Agriculture"), color="darkred")+
+  scale_y_log10()+
+  theme_minimal()+
+  labs(y="Average Funded Amount",
+       x="GINI",
+       title="")
+
+
+```
+
+***
+This figure is much cleaner as it shows the averages, which address the high-density issue. I also wanted to highlight the averages that correspond to the Agriculture sector given that it represented over 25% of the loans. That said; this conclusion does not really help me figure out the relation between Kiva loans and poverty. For this reason, I decide to use the Global Multidimensional Poverty Index (MPI) index to display the same relationship, which you can see in the following figure. I focused specifically on the MPI rural index, as it is better than the MPI Urban index in indicating the level of poverty. 
+
+### The relationship between the average amount of funded loans and The Global Multidimensional Poverty Index (MPI) 
+
+```{r}
+mpi <- import(here("data","MPI_national.csv"), setclass = "tbl_df")
+
+mpi <- mpi %>%
+  rename( 'Alpha-3 code'=`ISO`  )
+
+mpi_iso2 <- left_join(mpi, isoAlpha, by="Alpha-3 code") 
+
+mpi_iso2 <-mpi_iso2 %>%
+  rename(country_code = `Alpha-2 code`) 
+
+loans_mpi <- left_join(loans1, mpi_iso2, by="country_code")
+
+mpi_fund <- loans_mpi %>%
+  group_by (`MPI Rural`, sector) %>%
+  summarise(avg_fund = mean(funded_amount))
+
+ggplot(mpi_fund, aes(`MPI Rural`, avg_fund))+
+  geom_point(color= "grey70", alpha=.1)+
+  geom_point(data=filter(mpi_fund, sector == "Agriculture"), aes(`MPI Rural`, avg_fund), color="darkred")+
+  scale_y_log10()+
+  labs(x="MPI Rural",
+       y= "Average of the funded amount")+
+  theme_minimal()
+
+```
+
+***
+Based on the final two figures, I do not see a clear relationship between Kiva loans and inequality as these loans are used across different GINI coefficients. The relationship between Kiva loans and poverty is a little but cleaner given the that loans distribution is more concentrated around low MPI values. The only conclusion from exploring this relationship is that there might be an issue of communicating about the Kiva platform to regions with higher MPI rural index. 
+
+The following page will show the distribution of Kiva loans across the world. This will help understand better the regions that have better access to the platform.   
+
+
+# Kiva in the world {data-icon="fa-globe"}
+
+> Following the previous analysis of the relationship between kiva loans and inequality/ poverty. I wanted to explore the distribution of the loans across the world. For this, I used leaflet to display the number of loans across the globe. However, it did not show me the regions where there is a higher concentration. To  address this, I had to summarize the number loans by country instead of showing the number of loans in each city/town. I also tried plot_geo with plotly which had a cleaner map version and it helped put more focus on the concentrated regions. This resulted on the final version of the map displayed on the right of this page. As I expected, regions in Africa with high MPI do not use Kiva loans as much as latin amercian regions or asian regions wich have better MPI coeficients. This explains our findings from the previous page of the dashboard.   
+
+Column {data-width=500}
+-----------------------
+
+###Number of loans per country - Version 0
+
+```{r}
+leaflet(theme_region) %>% addTiles() %>%
+  addCircles(lng = ~lon, lat = ~lat,radius = ~(number) ,
+             color = ~c("blue")) %>%
+  setView(lng=0, lat=0,zoom = 2) 
+```
+
+Column {data-width=500}
+-----------------------
+
+###Number of loans per country 
+
+```{r}
+loan_number <- loans %>%
+  group_by(country) %>% 
+  summarise(number = length(loan_amount)) %>% 
+  ungroup() 
+
+loan_number$hover <- with(loan_number, 
+        paste('Country: ', country, '<br>',
+              'Number of loans: ',number ))
+
+plot_geo(loan_number, locationmode = "country names", offline = TRUE) %>%
+  add_trace(z = ~number, 
+            color = ~number, 
+            colors = 'Pastel2',
+            text = ~hover, 
+            locations=~country, 
+            marker = (line=list(color = "grey40", width = 0.5))) %>%
+  colorbar(title = 'Loans', tickprefix = '') %>%
+  layout(geo = list(showframe = FALSE,
+               showcoastlines = TRUE,
+               projection = list(type = 'Mercator')))
+```
+
