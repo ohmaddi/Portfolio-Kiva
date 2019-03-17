@@ -127,7 +127,7 @@ Top_10_full_g <-Top_10_full %>%
 
 # At a glance {data-icon="fa-hand-holding-usd"}
 
-> The online crowdfunding platform [Kiva](http://www.kiva.org) is dedicated to extend financial services to poor people around the World. This is a general overview of the platform intended for the general public, and particularly useful for people who would like to use the Kiva platform either as a lender, as a borrower or as a microfinance institution who wants to be the intermediary. The data represent Kiva loans data FY2014 and is extracted from [Kaggle](https://www.kaggle.com/kiva/data-science-for-good-kiva-crowdfunding).
+> The online crowdfunding platform [Kiva](http://www.kiva.org) is dedicated to extend financial services to poor people around the World. This is a general overview of the platform intended for the general public. The data represent Kiva loans data FY2014 and is extracted from [Kaggle](https://www.kaggle.com/kiva/data-science-for-good-kiva-crowdfunding).
 
 Column {data-width=120}
 ------------------------
