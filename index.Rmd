@@ -23,7 +23,7 @@ color:white!important;
 <style type="text/css">
 
 .chart-title {  /* chart_title  */
-   font-size: 15px
+   font-size: 13px
 </style>
 ```{r }
 options(scipen=5, message=FALSE, warning=FALSE)
