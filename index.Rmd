@@ -173,14 +173,20 @@ Column {data-width=440}
 ### Top 10 countries borrowing from Kiva by gender of the 1st member of the team
 
 ```{r}
-p1 <- ggplot(Top_10_full_g, aes(x = fct_reorder(country, Count),y = `sum(Count_g)`, fill=g1)) +
+
+Top_10_full_g_n <- Top_10_full_g %>%
+  rename( 'Number of loans'= `sum(Count_g)` ) %>%
+  rename ("Gender" = g1)
+
+p1 <- ggplot(Top_10_full_g_n, aes(x = fct_reorder(country, Count),y = `Number of loans`, fill=Gender)) +
   geom_bar(stat='identity', show.legend = FALSE) +
   labs(x="", y="")+
   scale_fill_OkabeIto()+
   coord_flip()+
   theme_minimal()
 
-ggplotly(p1)
+ggplotly(p1, tooltip=c("y", "fill"))
+  
 ```
 
 ### Number of loans borrowed from Kiva by world region
@@ -463,10 +469,10 @@ Following the plot I discussed on the previous tab, I decided to solve the high-
 ```{r}
 loans_gini_avg <- loans_gini11 %>%
   group_by (gini, sector.x) %>%
-  summarise(avg_fund = mean(funded_amount.x))
+  summarise(`Average funded amount` = mean(funded_amount.x))
 
 
-ggplot(loans_gini_avg, aes(y=avg_fund, x=gini))+
+GINI <- ggplot(loans_gini_avg, aes(y=`Average funded amount`, x=gini))+
   geom_point(color="blue", alpha=.1)+
   geom_point(data= filter(loans_gini_avg, sector.x=="Agriculture"), color="darkred")+
   scale_y_log10()+
@@ -475,11 +481,13 @@ ggplot(loans_gini_avg, aes(y=avg_fund, x=gini))+
        x="GINI",
        title="")
 
+ggplotly(GINI)
 
 ```
 
 ***
-This figure is much cleaner as it shows the averages, which address the high-density issue. I also wanted to highlight the averages that correspond to the Agriculture sector given that it represented over 25% of the loans. That said; this conclusion does not really help me figure out the relation between Kiva loans and poverty. For this reason, I decide to use the Global Multidimensional Poverty Index (MPI) index to display the same relationship, which you can see in the following figure. I focused specifically on the MPI rural index, as it is better than the MPI Urban index in indicating the level of poverty. 
+This figure is much cleaner as it shows the averages, which address the high-density issue. I also wanted to highlight the averages that correspond to the Agriculture sector given that it represented over 25% of the loans. I also used ggplotly here to display the information as the users browse the plot. That said; this plot does not really help me figure out the relation between Kiva loans and poverty. For this reason, I decided to use the Global Multidimensional Poverty Index (MPI) index to display the same relationship, which you can see in the following figure. I focused specifically on the MPI rural index, as it is better than the MPI Urban index in indicating the level of poverty.
+
 
 ### The relationship between the average amount of funded loans and The Global Multidimensional Poverty Index (MPI) 
 
@@ -498,20 +506,22 @@ loans_mpi <- left_join(loans1, mpi_iso2, by="country_code")
 
 mpi_fund <- loans_mpi %>%
   group_by (`MPI Rural`, sector) %>%
-  summarise(avg_fund = mean(funded_amount))
+  summarise( `Average funded amount` = mean(funded_amount))
 
-ggplot(mpi_fund, aes(`MPI Rural`, avg_fund))+
+mpi <- ggplot(mpi_fund, aes(`MPI Rural`, `Average funded amount`))+
   geom_point(color= "grey70", alpha=.1)+
-  geom_point(data=filter(mpi_fund, sector == "Agriculture"), aes(`MPI Rural`, avg_fund), color="darkred")+
+  geom_point(data=filter(mpi_fund, sector == "Agriculture"), color="darkred")+
   scale_y_log10()+
   labs(x="MPI Rural",
        y= "Average of the funded amount")+
   theme_minimal()
 
+ggplotly(mpi)
+
 ```
 
 ***
-Based on the final two figures, I do not see a clear relationship between Kiva loans and inequality as these loans are used across different GINI coefficients. The relationship between Kiva loans and poverty is a little but cleaner given the that loans distribution is more concentrated around low MPI values. The only conclusion from exploring this relationship is that there might be an issue of communicating about the Kiva platform to regions with higher MPI rural index. 
+Based on the final two figures, I do not see a clear relationship between Kiva loans and inequality as these loans are used across different GINI coefficients. The relationship between Kiva loans and poverty is a little bit cleaner given the that loans distribution is more concentrated around low MPI values. The only conclusion from exploring this relationship is that there might be an issue of communicating about the Kiva platform to regions with higher MPI rural index. 
 
 The following page will show the distribution of Kiva loans across the world. This will help understand better the regions that have better access to the platform.   
 
