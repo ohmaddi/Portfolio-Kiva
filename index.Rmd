@@ -228,21 +228,7 @@ loans %>% select(sector,loan_amount)%>%
   
 ```
 
-### Boxplot distribution of funded amount - Grouped by Loan Theme Type (top 50)
 
-```{r fig.width=9}
-top_l <- loans_gini1 %>% select(`Loan Theme Type`, funded_amount) %>% top_n(50,wt=funded_amount) 
-
-ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) + 
-  geom_boxplot(show.legend = FALSE) + 
-  theme_minimal() + 
-  scale_color_viridis_d() +
-  scale_y_log10()+
-  coord_flip() + 
-  labs(x="", y="")+
-  theme(axis.text = element_text(size = 14))
-
-```
 
 # At a glance - Version 0 {.storyboard}
 
@@ -297,6 +283,7 @@ I made a couple of changes in this plot in irder to display the final version th
 ### Boxplot distribution of funded amount - Version 0
 
 ```{r}
+top_l <- loans_gini1 %>% select(`Loan Theme Type`, funded_amount) %>% top_n(50,wt=funded_amount) 
 
 ggplot(top_l, aes(x=`Loan Theme Type`, y= funded_amount, col=`Loan Theme Type`)) + 
   geom_boxplot(show.legend = FALSE) + 
@@ -306,9 +293,28 @@ ggplot(top_l, aes(x=`Loan Theme Type`, y= funded_amount, col=`Loan Theme Type`))
 ```
 
 ***
-This plot displays the message that I wanted to communicate. However, the color pallette, the order of theme types as well as the scale of the y-axis (displayed as x-axis) need to be improved. I irdred the theme types, logged the funded amount axis (log-10) to deal with some outliers in the distributionm then I changed the pallette to viridis. Finally, I also changed the axis label size and removed the titles because the labels are explained already based on the title and subtitle. 
+This plot displays the message that I wanted to communicate. However, the color pallette, the order of theme types as well as the scale of the y-axis (displayed as x-axis) need to be improved. I irdred the theme types, logged the funded amount axis (log-10) to deal with some outliers in the distributionm then I changed the pallette to viridis. Finally, I also changed the axis label size and removed the titles because the labels are explained already based on the title and subtitle. The following tab displays the final version of the plot. However, I ended up removing it from the 1st page because as I tried the website on different browsers and on the mobile version, sometimes it worked well and most of the times the 1st page was too crowded, depending on the size of the screen. 
 
-The plot on the bottom left of the first page was straightforward and I did not make any changes to it.
+
+### Boxplot distribution of funded amount - Grouped by Loan Theme Type (top 50)
+
+```{r fig.width=9}
+
+
+ggplot(top_l, aes(x=fct_reorder(`Loan Theme Type`,funded_amount), y= funded_amount, col=`Loan Theme Type`)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  theme_minimal() + 
+  scale_color_viridis_d() +
+  scale_y_log10()+
+  coord_flip() + 
+  labs(x="", y="")+
+  theme(axis.text = element_text(size = 14))
+
+```
+
+***
+
+N.B. The plot on the bottom left of the first page was straightforward and I did not make any changes to it other than using plotly to make it more interactive.
 
 # How do we talk about the loans? {data-icon="fa-twitter"}
 Column {data-width=200}
